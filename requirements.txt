@@ -1,0 +1,11 @@
+Flask
+Flask-SocketIO
+Flask-Cors
+eventlet
+gevent
+gevent-websocket
+tensorflow
+numpy
+Pillow
+opencv-python
+psutil

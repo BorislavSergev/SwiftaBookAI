@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Predict Face Shape</h1>
+
+{% if model_exists %}
+<form id="upload-form" enctype="multipart/form-data">
+    <input type="file" name="file" id="file-input">
+    <button type="submit">Upload</button>
+</form>
+<div id="result"></div>
+
+<script>
+document.getElementById('upload-form').onsubmit = async function(event) {
+    event.preventDefault();
+    const formData = new FormData();
+    formData.append('file', document.getElementById('file-input').files[0]);
+
+    const response = await fetch('/predict', {
+        method: 'POST',
+        body: formData
+    });
+    const result = await response.json();
+    document.getElementById('result').textContent = JSON.stringify(result);
+}
+</script>
+{% else %}
+<p>Model is not available. Please train the model first.</p>
+{% endif %}
+{% endblock %}
