@@ -34,6 +34,9 @@ def validate_images(dataset_path):
                 if img is None or img.size == 0:
                     logging.warning(f"Invalid image found and removed: {img_path}")
                     os.remove(img_path)
+                else:
+                    # Try resizing to catch more issues
+                    resized_img = cv2.resize(img, (150, 150))
             except Exception as e:
                 logging.error(f"Error validating image {img_path}: {e}")
                 os.remove(img_path)
@@ -135,8 +138,8 @@ def get_machine_stats():
     system_info = platform.system()
     release_info = platform.release()
     ram_info = f"{round(psutil.virtual_memory().total / (1024.0 **3))} GB"
-    uptime_seconds = psutil.boot_time()
-    uptime = str(datetime.timedelta(seconds=int(uptime_seconds)))
+    uptime_seconds = int(psutil.boot_time())
+    uptime = str(datetime.timedelta(seconds=uptime_seconds))
     cores_info = psutil.cpu_count(logical=True)
     cpu_usage = psutil.cpu_percent(interval=1)
     memory_info = psutil.virtual_memory().percent
