@@ -111,12 +111,13 @@ def clear_logs():
     return 'Logs cleared', 200
 
 # Function to get machine stats
+# Function to get machine stats
 def get_machine_stats():
     cpu_usage = psutil.cpu_percent(interval=1)
     memory_info = psutil.virtual_memory().percent
     boot_time = datetime.fromtimestamp(psutil.boot_time())
     uptime = datetime.now() - boot_time
-    uptime_str = str(timedelta(seconds=uptime.seconds))
+    uptime_str = str(timedelta(seconds=int(uptime.total_seconds())))
     cores = psutil.cpu_count(logical=True)
     cpu_info = platform.processor()
     system_info = platform.system()

@@ -26,5 +26,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     fetchMachineStats();
-    setInterval(fetchMachineStats, 1000); // Refresh every 5 seconds
+    setInterval(fetchMachineStats, 5000); // Refresh every 5 seconds
 });
+
+//UPDATE 16:33
