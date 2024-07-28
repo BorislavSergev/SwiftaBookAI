@@ -6,6 +6,7 @@ from keras._tf_keras.keras import layers, models
 import psutil
 import platform
 import logging
+from datetime import datetime, timedelta
 
 logging.basicConfig(level=logging.INFO)
 UPLOAD_FOLDER = 'uploads/'
@@ -113,8 +114,9 @@ def clear_logs():
 def get_machine_stats():
     cpu_usage = psutil.cpu_percent(interval=1)
     memory_info = psutil.virtual_memory().percent
-    uptime_seconds = psutil.boot_time()
-    uptime = str(psutil._common.format_time(psutil.boot_time())) # format uptime
+    boot_time = datetime.fromtimestamp(psutil.boot_time())
+    uptime = datetime.now() - boot_time
+    uptime_str = str(timedelta(seconds=uptime.seconds))
     cores = psutil.cpu_count(logical=True)
     cpu_info = platform.processor()
     system_info = platform.system()
@@ -125,7 +127,7 @@ def get_machine_stats():
     return {
         "cpu_usage": cpu_usage,
         "memory_info": memory_info,
-        "uptime": uptime,
+        "uptime": uptime_str,
         "cores": cores,
         "CPU": cpu_info,
         "System": system_info,
