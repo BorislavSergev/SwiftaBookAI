@@ -2,7 +2,6 @@ from flask import render_template, request, jsonify
 from training import start_training, get_training_status, clear_logs, evaluate_model, get_logs, get_machine_stats, predict_image
 import os
 
-# Define upload folder
 UPLOAD_FOLDER = 'uploads/'
 
 def setup_routes(app, socketio):
@@ -27,23 +26,23 @@ def setup_routes(app, socketio):
             return str(e), 500
 
         response = start_training(filepath, socketio)
-        return response
+        return jsonify(response)
 
     @app.route('/training-status', methods=['GET'])
     def training_status():
-        return get_training_status()
+        return jsonify(get_training_status())
 
     @app.route('/logs', methods=['GET'])
     def logs():
-        return get_logs()
+        return jsonify(get_logs())
 
     @app.route('/clear-logs', methods=['GET'])
     def clear_logs_route():
-        return clear_logs()
+        return jsonify(clear_logs())
 
     @app.route('/machine-stats', methods=['GET'])
     def machine_stats():
-        return get_machine_stats()
+        return jsonify(get_machine_stats())
 
     @app.route('/accuracy')
     def accuracy():
@@ -55,7 +54,7 @@ def setup_routes(app, socketio):
 
     @app.route('/evaluate', methods=['POST'])
     def evaluate():
-        return evaluate_model()
+        return jsonify(evaluate_model())
 
     @app.route('/predict', methods=['GET'])
     def predict_page():

@@ -10,7 +10,7 @@
         overflow-y: scroll;
         background-color: black;
         color: white;
-        border-radius: 8px; /* Rounded corners for console log */
+        border-radius: 8px;
     }
 
     #train-button {
@@ -20,7 +20,7 @@
         padding: 10px 20px;
         font-size: 16px;
         cursor: pointer;
-        border-radius: 8px; /* Rounded corners */
+        border-radius: 8px;
     }
 
     #train-button:hover {
@@ -40,7 +40,7 @@
         font-size: 16px;
         cursor: pointer;
         margin-top: 10px;
-        border-radius: 8px; /* Rounded corners */
+        border-radius: 8px;
     }
 
     #clear-log:hover {
@@ -53,15 +53,14 @@
 
 <script>
     $(document).ready(function() {
-        // Check training status and fetch logs on page load
         checkTrainingStatus();
         fetchLogs();
 
-        // Handle form submission for training
         $('#upload-form').on('submit', function(event) {
             event.preventDefault();
             var formData = new FormData(this);
             $('#train-button').prop('disabled', true);
+            $('#train-button').text('Training in progress...');
 
             $.ajax({
                 url: '/train',
@@ -70,23 +69,22 @@
                 processData: false,
                 contentType: false,
                 success: function(response) {
-                    appendLog('Training started');
+                    appendLog(response[0]);
                 },
                 error: function(response) {
                     appendLog('Error starting training: ' + response.responseText);
                     $('#train-button').prop('disabled', false);
+                    $('#train-button').text('Start Training');
                 }
             });
         });
 
-        // Handle log clearing
         $('#clear-log').on('click', function() {
             $.get('/clear-logs', function() {
                 $('#console-log').html('');
             });
         });
 
-        // Socket.IO for real-time logging
         var socket = io.connect('http://' + document.domain + ':' + location.port);
         socket.on('log', function(data) {
             appendLog('Epoch ' + (data.epoch + 1) + ': Loss=' + data.loss + ', Accuracy=' + data.accuracy + ', Val Loss=' + data.val_loss + ', Val Accuracy=' + data.val_accuracy);
@@ -112,8 +110,10 @@
             $.get('/training-status', function(data) {
                 if (data.is_training) {
                     $('#train-button').prop('disabled', true);
+                    $('#train-button').text('Training in progress...');
                 } else {
                     $('#train-button').prop('disabled', false);
+                    $('#train-button').text('Start Training');
                 }
             });
         }
@@ -124,7 +124,7 @@
 
 <form id="upload-form" enctype="multipart/form-data">
     <input type="file" name="file" required>
-    <button type="submit" id="train-button">Training has started</button>
+    <button type="submit" id="train-button">Start Training</button>
 </form>
 
 <h2>Console Log</h2>
