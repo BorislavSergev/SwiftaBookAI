@@ -111,12 +111,22 @@ def clear_logs():
 
 # Function to get machine stats
 def get_machine_stats():
+    cpu_usage = psutil.cpu_percent(interval=1)
+    memory_info = psutil.virtual_memory().percent
+    uptime_seconds = psutil.boot_time()
+    uptime = str(psutil._common.format_time(psutil.boot_time())) # format uptime
+    cores = psutil.cpu_count(logical=True)
     cpu_info = platform.processor()
     system_info = platform.system()
     release_info = platform.release()
-    ram_info = str(round(psutil.virtual_memory().total / (1024.0 **3)))+" GB"
+    ram_info = str(round(psutil.virtual_memory().total / (1024.0 **3))) + " GB"
     gpu_info = "NVIDIA" # Placeholder, replace with actual GPU info if available
+    
     return {
+        "cpu_usage": cpu_usage,
+        "memory_info": memory_info,
+        "uptime": uptime,
+        "cores": cores,
         "CPU": cpu_info,
         "System": system_info,
         "Release": release_info,
