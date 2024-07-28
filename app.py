@@ -1,12 +1,13 @@
-from flask import Flask, jsonify
-from training import get_machine_stats
+from flask import Flask
+from flask_socketio import SocketIO
+from flask_cors import CORS
+from routes import setup_routes
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
+CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
+    
+setup_routes(app, socketio)
 
-@app.route('/machine-stats', methods=['GET'])
-def machine_stats():
-    stats, status_code = get_machine_stats()
-    return jsonify(stats), status_code
-
-if __name__ == "__main__":
-    app.run(port=5050, debug=True)
+if __name__ == '__main__':
+    socketio.run(app, host='0.0.0.0', port=5050, debug=True)

@@ -5,6 +5,11 @@ import os
 UPLOAD_FOLDER = 'uploads/'
 
 def setup_routes(app, socketio):
+    @app.route('/machine-stats', methods=['GET'])
+    def machine_stats():
+        stats, status_code = get_machine_stats()
+        return jsonify(stats), status_code
+
     @app.route('/')
     def index():
         return render_template('index.html')
