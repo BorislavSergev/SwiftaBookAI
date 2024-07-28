@@ -1,15 +1,14 @@
+
 import os
 import zipfile
 import tensorflow as tf
-from keras._tf_keras.keras.preprocessing.image import ImageDataGenerator
-from keras._tf_keras.keras import layers, models
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras import layers, models
 import psutil
 import platform
 import logging
-from flask import jsonify
-
-
-# test
+from flask import Flask, request, jsonify
+from flask_socketio import SocketIO
 
 logging.basicConfig(level=logging.INFO)
 UPLOAD_FOLDER = 'uploads/'
@@ -17,6 +16,9 @@ UPLOAD_FOLDER = 'uploads/'
 # Placeholder variables for training status and logs
 is_training = False
 training_logs = []
+
+app = Flask(__name__)
+socketio = SocketIO(app)
 
 # Function to extract zip file
 def extract_zip(filepath):
@@ -37,15 +39,17 @@ def start_training(filepath, socketio):
         logging.info(f"Dataset extracted to {dataset_path}")
 
         # Prepare data generators
-        train_datagen = ImageDataGenerator(validation_split=0.2)
+        train_datagen = ImageDataGenerator(validation_split=0.2, rescale=1./255)
         train_generator = train_datagen.flow_from_directory(
             dataset_path,
+            target_size=(256, 256),
             batch_size=32,
             class_mode='categorical',
             subset='training'
         )
         validation_generator = train_datagen.flow_from_directory(
             dataset_path,
+            target_size=(256, 256),
             batch_size=32,
             class_mode='categorical',
             subset='validation'
@@ -53,7 +57,7 @@ def start_training(filepath, socketio):
 
         # Build the model
         model = models.Sequential([
-            layers.Conv2D(32, (3, 3), activation='relu', input_shape=(256, 256, 3)),  # Specify input shape
+            layers.Conv2D(32, (3, 3), activation='relu', input_shape=(256, 256, 3)),
             layers.MaxPooling2D((2, 2)),
             layers.Conv2D(64, (3, 3), activation='relu'),
             layers.MaxPooling2D((2, 2)),
@@ -99,19 +103,23 @@ def start_training(filepath, socketio):
         return f"Error during training: {e}", 500
 
 # Function to get training status
+@app.route('/training-status', methods=['GET'])
 def get_training_status():
-    return {"is_training": is_training}, 200
+    return jsonify({"is_training": is_training}), 200
 
 # Function to get logs
+@app.route('/logs', methods=['GET'])
 def get_logs():
-    return '\n'.join(training_logs), 200
+    return jsonify({'logs': training_logs}), 200
 
 # Function to clear logs
+@app.route('/clear-logs', methods=['POST'])
 def clear_logs():
     training_logs.clear()
     return 'Logs cleared', 200
 
 # Function to get machine stats
+@app.route('/machine-stats', methods=['GET'])
 def get_machine_stats():
     cpu_info = platform.processor()
     system_info = platform.system()
@@ -134,7 +142,7 @@ def get_machine_stats():
         "RAM": ram_info,
         "GPU": "NVIDIA"  # Placeholder, replace with actual GPU info if available
     }
-    return stats, 200
+    return jsonify(stats), 200
 
 def convert_seconds_to_time_format(seconds):
     m, s = divmod(seconds, 60)
@@ -144,9 +152,14 @@ def convert_seconds_to_time_format(seconds):
     return f"{mo}m {d}d {h}h {m}min {s}s"
 
 # Dummy implementation for model evaluation
+@app.route('/evaluate-model', methods=['POST'])
 def evaluate_model():
     return "Model evaluation not implemented", 200
 
 # Dummy implementation for image prediction
-def predict_image(file):
+@app.route('/predict-image', methods=['POST'])
+def predict_image():
     return {"prediction": "Not implemented"}, 200
+
+if __name__ == '__main__':
+    socketio.run(app, debug=True)
