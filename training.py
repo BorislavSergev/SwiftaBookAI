@@ -8,6 +8,9 @@ import platform
 import logging
 from flask import jsonify
 
+
+# test
+
 logging.basicConfig(level=logging.INFO)
 UPLOAD_FOLDER = 'uploads/'
 
