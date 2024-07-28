@@ -6,8 +6,6 @@ from keras._tf_keras.keras import layers, models
 import psutil
 import platform
 import logging
-import cv2
-import datetime
 from flask import jsonify
 
 logging.basicConfig(level=logging.INFO)
@@ -24,27 +22,6 @@ def extract_zip(filepath):
         zip_ref.extractall(extract_dir)
     return extract_dir
 
-# Function to validate images
-def validate_images(dataset_path):
-    valid = True
-    for root, _, files in os.walk(dataset_path):
-        for file in files:
-            try:
-                img_path = os.path.join(root, file)
-                img = cv2.imread(img_path)
-                if img is None or img.size == 0:
-                    logging.warning(f"Invalid image found and removed: {img_path}")
-                    os.remove(img_path)
-                    valid = False
-                else:
-                    # Try resizing to catch more issues
-                    resized_img = cv2.resize(img, (150, 150))
-            except Exception as e:
-                logging.error(f"Error validating image {img_path}: {e}")
-                os.remove(img_path)
-                valid = False
-    return valid
-
 # Function to start training
 def start_training(filepath, socketio):
     global is_training
@@ -56,24 +33,16 @@ def start_training(filepath, socketio):
         dataset_path = extract_zip(filepath)
         logging.info(f"Dataset extracted to {dataset_path}")
 
-        # Validate images
-        if not validate_images(dataset_path):
-            logging.error("Dataset contains invalid images.")
-            is_training = False
-            return "Dataset contains invalid images.", 500
-
         # Prepare data generators
-        train_datagen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
+        train_datagen = ImageDataGenerator(validation_split=0.2)
         train_generator = train_datagen.flow_from_directory(
             dataset_path,
-            target_size=(150, 150),
             batch_size=32,
             class_mode='categorical',
             subset='training'
         )
         validation_generator = train_datagen.flow_from_directory(
             dataset_path,
-            target_size=(150, 150),
             batch_size=32,
             class_mode='categorical',
             subset='validation'
@@ -81,7 +50,7 @@ def start_training(filepath, socketio):
 
         # Build the model
         model = models.Sequential([
-            layers.Conv2D(32, (3, 3), activation='relu', input_shape=(150, 150, 3)),
+            layers.Conv2D(32, (3, 3), activation='relu', input_shape=(None, None, 3)),
             layers.MaxPooling2D((2, 2)),
             layers.Conv2D(64, (3, 3), activation='relu'),
             layers.MaxPooling2D((2, 2)),
@@ -145,8 +114,8 @@ def get_machine_stats():
     system_info = platform.system()
     release_info = platform.release()
     ram_info = f"{round(psutil.virtual_memory().total / (1024.0 **3))} GB"
-    uptime_seconds = int(datetime.datetime.now().timestamp() - psutil.boot_time())
-    uptime = str(datetime.timedelta(seconds=uptime_seconds))
+    uptime_seconds = psutil.boot_time()
+    uptime = convert_seconds_to_time_format(uptime_seconds)
     cores_info = psutil.cpu_count(logical=True)
     cpu_usage = psutil.cpu_percent(interval=1)
     memory_info = psutil.virtual_memory().percent
@@ -163,6 +132,13 @@ def get_machine_stats():
         "GPU": "NVIDIA"  # Placeholder, replace with actual GPU info if available
     }
     return stats, 200
+
+def convert_seconds_to_time_format(seconds):
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    d, h = divmod(h, 24)
+    mo, d = divmod(d, 30)
+    return f"{mo}m {d}d {h}h {m}min {s}s"
 
 # Dummy implementation for model evaluation
 def evaluate_model():
