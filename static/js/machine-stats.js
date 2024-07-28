@@ -11,11 +11,10 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(data => {
                 console.log("Data fetched:", data);
-                document.getElementById('cpu-usage').innerText = `CPU Usage: ${data.cpu_usage}%`;
-                document.getElementById('memory-info').innerText = `Memory Usage: ${data.memory_info}%`;
-                document.getElementById('uptime').innerText = `Uptime: ${data.uptime}`;
-                document.getElementById('cores').innerText = `Cores: ${data.cores}`;
-
+                document.getElementById('cpu-usage').innerText = `CPU: ${data.CPU}`;
+                document.getElementById('memory-info').innerText = `Memory: ${data.RAM}`;
+                document.getElementById('uptime').innerText = `System: ${data.System} ${data.Release}`;
+                document.getElementById('cores').innerText = `GPU: ${data.GPU}`;
             })
             .catch(error => {
                 console.error('Error fetching machine stats:', error);
