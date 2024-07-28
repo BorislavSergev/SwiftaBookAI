@@ -138,7 +138,7 @@ def get_machine_stats():
     system_info = platform.system()
     release_info = platform.release()
     ram_info = f"{round(psutil.virtual_memory().total / (1024.0 **3))} GB"
-    uptime_seconds = int(psutil.boot_time())
+    uptime_seconds = int(datetime.datetime.now().timestamp() - psutil.boot_time())
     uptime = str(datetime.timedelta(seconds=uptime_seconds))
     cores_info = psutil.cpu_count(logical=True)
     cpu_usage = psutil.cpu_percent(interval=1)
