@@ -26,6 +26,7 @@ def extract_zip(filepath):
 
 # Function to validate images
 def validate_images(dataset_path):
+    valid = True
     for root, _, files in os.walk(dataset_path):
         for file in files:
             try:
@@ -34,12 +35,15 @@ def validate_images(dataset_path):
                 if img is None or img.size == 0:
                     logging.warning(f"Invalid image found and removed: {img_path}")
                     os.remove(img_path)
+                    valid = False
                 else:
                     # Try resizing to catch more issues
                     resized_img = cv2.resize(img, (150, 150))
             except Exception as e:
                 logging.error(f"Error validating image {img_path}: {e}")
                 os.remove(img_path)
+                valid = False
+    return valid
 
 # Function to start training
 def start_training(filepath, socketio):
@@ -53,7 +57,10 @@ def start_training(filepath, socketio):
         logging.info(f"Dataset extracted to {dataset_path}")
 
         # Validate images
-        validate_images(dataset_path)
+        if not validate_images(dataset_path):
+            logging.error("Dataset contains invalid images.")
+            is_training = False
+            return "Dataset contains invalid images.", 500
 
         # Prepare data generators
         train_datagen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
