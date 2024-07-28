@@ -1,3 +1,4 @@
+import datetime
 import os
 import zipfile
 import tensorflow as tf
@@ -6,9 +7,9 @@ from keras._tf_keras.keras import layers, models
 import psutil
 import platform
 import logging
+import cv2
 from flask import jsonify
 import time
-import cv2
 
 logging.basicConfig(level=logging.INFO)
 UPLOAD_FOLDER = 'uploads/'
@@ -24,7 +25,7 @@ def extract_zip(filepath):
         zip_ref.extractall(extract_dir)
     return extract_dir
 
-# Function to check if the dataset directory contains valid images
+# Function to validate images
 def validate_images(directory):
     for root, _, files in os.walk(directory):
         for file in files:
@@ -33,25 +34,11 @@ def validate_images(directory):
                 try:
                     img = cv2.imread(image_path)
                     if img is None or img.size == 0:
-                        logging.error(f"Invalid image found: {image_path}")
+                        logging.error(f"Invalid image found and removed: {image_path}")
                         os.remove(image_path)  # Remove invalid images
                 except Exception as e:
                     logging.error(f"Error loading image {image_path}: {e}")
                     os.remove(image_path)  # Remove problematic images
-def validate_images(directory):
-    for root, _, files in os.walk(directory):
-        for file in files:
-            if file.lower().endswith(('png', 'jpg', 'jpeg')):
-                image_path = os.path.join(root, file)
-                try:
-                    img = cv2.imread(image_path)
-                    if img is None or img.size == 0:
-                        logging.error(f"Invalid image found: {image_path}")
-                        os.remove(image_path)  # Remove invalid images
-                except Exception as e:
-                    logging.error(f"Error loading image {image_path}: {e}")
-                    os.remove(image_path)  # Remove problematic images
-
 
 # Function to start training
 def start_training(filepath, socketio):
@@ -145,23 +132,15 @@ def clear_logs():
     return 'Logs cleared', 200
 
 # Function to get machine stats
+
 def get_machine_stats():
     cpu_info = platform.processor()
     system_info = platform.system()
     release_info = platform.release()
     ram_info = f"{round(psutil.virtual_memory().total / (1024.0 **3))} GB"
-    
-    boot_time = psutil.boot_time()
-    current_time = time.time()
-    uptime_seconds = int(current_time - boot_time)
-    
-    months, remainder = divmod(uptime_seconds, 2628000)  # 1 month = 2628000 seconds
-    days, remainder = divmod(remainder, 86400)           # 1 day = 86400 seconds
-    hours, remainder = divmod(remainder, 3600)           # 1 hour = 3600 seconds
-    minutes, seconds = divmod(remainder, 60)             # 1 minute = 60 seconds
-    
-    uptime = f"{months}m {days}d {hours}h {minutes}min {seconds}s"
-    
+    uptime_seconds = int(psutil.boot_time())
+    uptime_delta = datetime.datetime.now() - datetime.datetime.fromtimestamp(uptime_seconds)
+    uptime_info = f"{uptime_delta.days // 30}m {uptime_delta.days % 30}d {uptime_delta.seconds // 3600}h {(uptime_delta.seconds % 3600) // 60}min {uptime_delta.seconds % 60}s"
     cores_info = psutil.cpu_count(logical=True)
     cpu_usage = psutil.cpu_percent(interval=1)
     memory_info = psutil.virtual_memory().percent
@@ -169,7 +148,7 @@ def get_machine_stats():
     stats = {
         "cpu_usage": cpu_usage,
         "memory_info": memory_info,
-        "uptime": uptime,
+        "uptime": uptime_info,
         "cores": cores_info,
         "CPU": cpu_info,
         "System": system_info,
