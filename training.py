@@ -6,7 +6,7 @@ from keras._tf_keras.keras import layers, models
 import psutil
 import platform
 import logging
-from datetime import datetime, timedelta
+from flask import jsonify
 
 logging.basicConfig(level=logging.INFO)
 UPLOAD_FOLDER = 'uploads/'
@@ -111,31 +111,29 @@ def clear_logs():
     return 'Logs cleared', 200
 
 # Function to get machine stats
-# Function to get machine stats
 def get_machine_stats():
-    cpu_usage = psutil.cpu_percent(interval=1)
-    memory_info = psutil.virtual_memory().percent
-    boot_time = datetime.fromtimestamp(psutil.boot_time())
-    uptime = datetime.now() - boot_time
-    uptime_str = str(timedelta(seconds=int(uptime.total_seconds())))
-    cores = psutil.cpu_count(logical=True)
     cpu_info = platform.processor()
     system_info = platform.system()
     release_info = platform.release()
-    ram_info = str(round(psutil.virtual_memory().total / (1024.0 **3))) + " GB"
-    gpu_info = "NVIDIA" # Placeholder, replace with actual GPU info if available
+    ram_info = f"{round(psutil.virtual_memory().total / (1024.0 **3))} GB"
+    uptime_info = psutil.boot_time()
+    uptime = f"{int(uptime_info / 3600)} hours"
+    cores_info = psutil.cpu_count(logical=True)
+    cpu_usage = psutil.cpu_percent(interval=1)
+    memory_info = psutil.virtual_memory().percent
     
-    return {
+    stats = {
         "cpu_usage": cpu_usage,
         "memory_info": memory_info,
-        "uptime": uptime_str,
-        "cores": cores,
+        "uptime": uptime,
+        "cores": cores_info,
         "CPU": cpu_info,
         "System": system_info,
         "Release": release_info,
         "RAM": ram_info,
-        "GPU": gpu_info
-    }, 200
+        "GPU": "NVIDIA"  # Placeholder, replace with actual GPU info if available
+    }
+    return stats, 200
 
 # Dummy implementation for model evaluation
 def evaluate_model():

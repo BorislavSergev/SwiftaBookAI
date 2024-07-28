@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log("JavaScript file loaded");
 
     function fetchMachineStats() {
-        fetch('/machine-stats')
+        fetch('http://127.0.0.1:5050/machine-stats')
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
@@ -28,5 +28,3 @@ document.addEventListener('DOMContentLoaded', function() {
     fetchMachineStats();
     setInterval(fetchMachineStats, 5000); // Refresh every 5 seconds
 });
-
-//UPDATE 16:33
