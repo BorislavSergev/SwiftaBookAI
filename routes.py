@@ -1,5 +1,8 @@
 from flask import render_template, request, jsonify
-from training import start_training, get_training_status, clear_logs, evaluate_model, get_logs, get_machine_stats, predict_image
+from training import (
+    start_training, get_training_status, clear_logs, evaluate_model,
+    get_logs, get_machine_stats, predict_image
+)
 import os
 
 UPLOAD_FOLDER = 'uploads/'
@@ -30,24 +33,23 @@ def setup_routes(app, socketio):
         except Exception as e:
             return str(e), 500
 
-        response = start_training(filepath, socketio)
-        return jsonify(response)
+        response, status_code = start_training(filepath, socketio)
+        return jsonify({'message': response}), status_code
 
     @app.route('/training-status', methods=['GET'])
     def training_status():
-        return jsonify(get_training_status())
+        status, status_code = get_training_status()
+        return jsonify(status), status_code
 
     @app.route('/logs', methods=['GET'])
     def logs():
-        return jsonify(get_logs())
+        logs, status_code = get_logs()
+        return jsonify({'logs': logs}), status_code
 
-    @app.route('/clear-logs', methods=['GET'])
+    @app.route('/clear-logs', methods=['POST'])
     def clear_logs_route():
-        return jsonify(clear_logs())
-
-    @app.route('/machine-stats', methods=['GET'])
-    def machine_stats():
-        return jsonify(get_machine_stats())
+        response, status_code = clear_logs()
+        return jsonify({'message': response}), status_code
 
     @app.route('/accuracy')
     def accuracy():
@@ -59,7 +61,8 @@ def setup_routes(app, socketio):
 
     @app.route('/evaluate', methods=['POST'])
     def evaluate():
-        return jsonify(evaluate_model())
+        response, status_code = evaluate_model()
+        return jsonify({'message': response}), status_code
 
     @app.route('/predict', methods=['GET'])
     def predict_page():
@@ -74,5 +77,5 @@ def setup_routes(app, socketio):
         if file.filename == '':
             return jsonify({'error': 'No selected file'}), 400
 
-        response = predict_image(file)
-        return jsonify(response)
+        response, status_code = predict_image(file)
+        return jsonify(response), status_code

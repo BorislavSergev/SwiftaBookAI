@@ -6,7 +6,7 @@ from routes import setup_routes
 app = Flask(__name__, static_folder='static')
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
-    
+
 setup_routes(app, socketio)
 
 if __name__ == '__main__':
