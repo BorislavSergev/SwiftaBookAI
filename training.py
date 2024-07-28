@@ -131,7 +131,6 @@ def clear_logs():
     return 'Logs cleared', 200
 
 # Function to get machine stats
-
 def get_machine_stats():
     cpu_info = platform.processor()
     system_info = platform.system()
