@@ -6,7 +6,7 @@ import cv2
 import tensorflow as tf
 
 app = Flask(__name__)
-model = tf.keras.models.load_model('model.h5')  # Replace with your model's path
+model = tf.keras.models.load_model('path_to_your_model.h5')  # Replace with your model's path
 
 @app.route('/')
 def index():
