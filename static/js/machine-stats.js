@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log("JavaScript file loaded");
 
     function fetchMachineStats() {
-        fetch('http://127.0.0.1:5050/machine-stats')
+        fetch('http://0.0.0.0:5050/machine-stats')
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
@@ -18,13 +18,9 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error fetching machine stats:', error);
-                document.getElementById('cpu-usage').innerText = 'Error loading data';
-                document.getElementById('memory-info').innerText = 'Error loading data';
-                document.getElementById('uptime').innerText = 'Error loading data';
-                document.getElementById('cores').innerText = 'Error loading data';
             });
     }
 
     fetchMachineStats();
-    setInterval(fetchMachineStats, 5000); // Refresh every 5 seconds
+    setInterval(fetchMachineStats, 1000); // Refresh every 1 second
 });
