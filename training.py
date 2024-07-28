@@ -38,6 +38,20 @@ def validate_images(directory):
                 except Exception as e:
                     logging.error(f"Error loading image {image_path}: {e}")
                     os.remove(image_path)  # Remove problematic images
+def validate_images(directory):
+    for root, _, files in os.walk(directory):
+        for file in files:
+            if file.lower().endswith(('png', 'jpg', 'jpeg')):
+                image_path = os.path.join(root, file)
+                try:
+                    img = cv2.imread(image_path)
+                    if img is None or img.size == 0:
+                        logging.error(f"Invalid image found: {image_path}")
+                        os.remove(image_path)  # Remove invalid images
+                except Exception as e:
+                    logging.error(f"Error loading image {image_path}: {e}")
+                    os.remove(image_path)  # Remove problematic images
+
 
 # Function to start training
 def start_training(filepath, socketio):
