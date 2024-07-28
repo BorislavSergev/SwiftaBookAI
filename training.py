@@ -7,6 +7,7 @@ import psutil
 import platform
 import logging
 from flask import jsonify
+import time
 
 logging.basicConfig(level=logging.INFO)
 UPLOAD_FOLDER = 'uploads/'
@@ -117,8 +118,18 @@ def get_machine_stats():
     system_info = platform.system()
     release_info = platform.release()
     ram_info = f"{round(psutil.virtual_memory().total / (1024.0 **3))} GB"
-    uptime_info = psutil.boot_time()
-    uptime = f"{int(uptime_info / 3600)} hours"
+    
+    boot_time = psutil.boot_time()
+    current_time = time.time()
+    uptime_seconds = int(current_time - boot_time)
+    
+    months, remainder = divmod(uptime_seconds, 2628000)  # 1 month = 2628000 seconds
+    days, remainder = divmod(remainder, 86400)           # 1 day = 86400 seconds
+    hours, remainder = divmod(remainder, 3600)           # 1 hour = 3600 seconds
+    minutes, seconds = divmod(remainder, 60)             # 1 minute = 60 seconds
+    
+    uptime = f"{months}m {days}d {hours}h {minutes}min {seconds}s"
+    
     cores_info = psutil.cpu_count(logical=True)
     cpu_usage = psutil.cpu_percent(interval=1)
     memory_info = psutil.virtual_memory().percent
