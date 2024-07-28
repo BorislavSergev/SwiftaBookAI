@@ -8,6 +8,7 @@ import time
 import cv2
 import numpy as np
 from utils import check_directories, log_directory_structure
+from sklearn.metrics import classification_report
 
 UPLOAD_FOLDER = 'uploads'
 LOG_FILE = 'training_log.txt'
@@ -85,13 +86,30 @@ def evaluate_model():
     model = tf.keras.models.load_model(model_path)
     val_data, val_labels = load_data(UPLOAD_FOLDER, subset='validation')
 
-    loss, accuracy = model.evaluate(val_data, val_labels)
+    predictions = model.predict(val_data)
+    predicted_labels = np.argmax(predictions, axis=1)
+    true_labels = np.argmax(val_labels, axis=1)
+
+    report = classification_report(true_labels, predicted_labels, target_names=['heart', 'oblong', 'oval', 'round', 'square'], output_dict=True)
+
+    accuracy = report['accuracy']
+    precision = report['weighted avg']['precision']
+    recall = report['weighted avg']['recall']
+    f1_score = report['weighted avg']['f1-score']
+
     accuracy_file = 'model_accuracy.txt'
     with open(accuracy_file, 'w') as file:
         file.write(f"Validation Accuracy: {accuracy * 100:.2f}%\n")
+        file.write(f"Precision: {precision * 100:.2f}%\n")
+        file.write(f"Recall: {recall * 100:.2f}%\n")
+        file.write(f"F1 Score: {f1_score * 100:.2f}%\n")
 
-    return jsonify({'accuracy': f"{accuracy * 100:.2f}%"})
-
+    return jsonify({
+        'accuracy': f"{accuracy * 100:.2f}%",
+        'precision': f"{precision * 100:.2f}%",
+        'recall': f"{recall * 100:.2f}%",
+        'f1_score': f"{f1_score * 100:.2f}%"
+    })
 def load_data(folder, subset='training'):
     data = []
     labels = []
