@@ -3,6 +3,8 @@ import zipfile
 import tensorflow as tf
 from keras._tf_keras.keras.preprocessing.image import ImageDataGenerator
 from keras._tf_keras.keras import layers, models
+import psutil
+import platform
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -12,12 +14,14 @@ UPLOAD_FOLDER = 'uploads/'
 is_training = False
 training_logs = []
 
+# Function to extract zip file
 def extract_zip(filepath):
     extract_dir = os.path.join(UPLOAD_FOLDER, os.path.splitext(os.path.basename(filepath))[0])
     with zipfile.ZipFile(filepath, 'r') as zip_ref:
         zip_ref.extractall(extract_dir)
     return extract_dir
 
+# Function to start training
 def start_training(filepath, socketio):
     global is_training
     is_training = True
@@ -92,24 +96,38 @@ def start_training(filepath, socketio):
         is_training = False
         return f"Error during training: {e}", 500
 
+# Function to get training status
 def get_training_status():
     return {"is_training": is_training}, 200
 
+# Function to get logs
 def get_logs():
     return '\n'.join(training_logs), 200
 
+# Function to clear logs
 def clear_logs():
     training_logs.clear()
     return 'Logs cleared', 200
 
+# Function to get machine stats
 def get_machine_stats():
-    # Dummy implementation for machine stats
-    return {"cpu": "Intel", "gpu": "NVIDIA", "ram": "16GB"}, 200
+    cpu_info = platform.processor()
+    system_info = platform.system()
+    release_info = platform.release()
+    ram_info = str(round(psutil.virtual_memory().total / (1024.0 **3)))+" GB"
+    gpu_info = "NVIDIA" # Placeholder, replace with actual GPU info if available
+    return {
+        "CPU": cpu_info,
+        "System": system_info,
+        "Release": release_info,
+        "RAM": ram_info,
+        "GPU": gpu_info
+    }, 200
 
+# Dummy implementation for model evaluation
 def evaluate_model():
-    # Dummy implementation for model evaluation
     return "Model evaluation not implemented", 200
 
+# Dummy implementation for image prediction
 def predict_image(file):
-    # Dummy implementation for image prediction
     return {"prediction": "Not implemented"}, 200
