@@ -12,7 +12,7 @@ from sklearn.metrics import classification_report
 
 UPLOAD_FOLDER = 'uploads'
 LOG_FILE = 'training_log.txt'
-MODEL_FILE = os.path.join(UPLOAD_FOLDER, 'face_shape_model.h5')
+MODEL_FILE = os.path.join(UPLOAD_FOLDER, 'model.h5')
 
 training_state = {'is_training': False}
 
