@@ -1,4 +1,3 @@
-import datetime
 import os
 import zipfile
 import tensorflow as tf
@@ -8,8 +7,8 @@ import psutil
 import platform
 import logging
 import cv2
+import datetime
 from flask import jsonify
-import time
 
 logging.basicConfig(level=logging.INFO)
 UPLOAD_FOLDER = 'uploads/'
@@ -26,19 +25,18 @@ def extract_zip(filepath):
     return extract_dir
 
 # Function to validate images
-def validate_images(directory):
-    for root, _, files in os.walk(directory):
+def validate_images(dataset_path):
+    for root, _, files in os.walk(dataset_path):
         for file in files:
-            if file.lower().endswith(('png', 'jpg', 'jpeg')):
-                image_path = os.path.join(root, file)
-                try:
-                    img = cv2.imread(image_path)
-                    if img is None or img.size == 0:
-                        logging.error(f"Invalid image found and removed: {image_path}")
-                        os.remove(image_path)  # Remove invalid images
-                except Exception as e:
-                    logging.error(f"Error loading image {image_path}: {e}")
-                    os.remove(image_path)  # Remove problematic images
+            try:
+                img_path = os.path.join(root, file)
+                img = cv2.imread(img_path)
+                if img is None or img.size == 0:
+                    logging.warning(f"Invalid image found and removed: {img_path}")
+                    os.remove(img_path)
+            except Exception as e:
+                logging.error(f"Error validating image {img_path}: {e}")
+                os.remove(img_path)
 
 # Function to start training
 def start_training(filepath, socketio):
@@ -51,7 +49,7 @@ def start_training(filepath, socketio):
         dataset_path = extract_zip(filepath)
         logging.info(f"Dataset extracted to {dataset_path}")
 
-        # Validate images in the dataset
+        # Validate images
         validate_images(dataset_path)
 
         # Prepare data generators
@@ -83,7 +81,7 @@ def start_training(filepath, socketio):
             layers.MaxPooling2D((2, 2)),
             layers.Flatten(),
             layers.Dense(512, activation='relu'),
-            layers.Dense(5, activation='softmax')
+            layers.Dense(train_generator.num_classes, activation='softmax')
         ])
 
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
@@ -116,7 +114,7 @@ def start_training(filepath, socketio):
     except Exception as e:
         logging.error(f"Error during training: {e}")
         is_training = False
-        return jsonify({"error": f"Error during training: {e}"}), 500
+        return f"Error during training: {e}", 500
 
 # Function to get training status
 def get_training_status():
@@ -132,15 +130,13 @@ def clear_logs():
     return 'Logs cleared', 200
 
 # Function to get machine stats
-
 def get_machine_stats():
     cpu_info = platform.processor()
     system_info = platform.system()
     release_info = platform.release()
     ram_info = f"{round(psutil.virtual_memory().total / (1024.0 **3))} GB"
-    uptime_seconds = int(psutil.boot_time())
-    uptime_delta = datetime.datetime.now() - datetime.datetime.fromtimestamp(uptime_seconds)
-    uptime_info = f"{uptime_delta.days // 30}m {uptime_delta.days % 30}d {uptime_delta.seconds // 3600}h {(uptime_delta.seconds % 3600) // 60}min {uptime_delta.seconds % 60}s"
+    uptime_seconds = psutil.boot_time()
+    uptime = str(datetime.timedelta(seconds=int(uptime_seconds)))
     cores_info = psutil.cpu_count(logical=True)
     cpu_usage = psutil.cpu_percent(interval=1)
     memory_info = psutil.virtual_memory().percent
@@ -148,7 +144,7 @@ def get_machine_stats():
     stats = {
         "cpu_usage": cpu_usage,
         "memory_info": memory_info,
-        "uptime": uptime_info,
+        "uptime": uptime,
         "cores": cores_info,
         "CPU": cpu_info,
         "System": system_info,
