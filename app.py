@@ -2,11 +2,11 @@ from flask import Flask, render_template, request, jsonify
 from werkzeug.utils import secure_filename
 import os
 import numpy as np
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing import image
+import cv2
+import tensorflow as tf
 
 app = Flask(__name__)
-model = load_model('path_to_your_model.h5')  # Replace with your model's path
+model = tf.keras.models.load_model('path_to_your_model.h5')  # Replace with your model's path
 
 @app.route('/')
 def index():
@@ -33,9 +33,11 @@ def predict():
             filepath = os.path.join('uploads', filename)
             file.save(filepath)
 
-            img = image.load_img(filepath, target_size=(224, 224))  # Adjust target_size to match your model input
-            img_array = image.img_to_array(img)
-            img_array = np.expand_dims(img_array, axis=0) / 255.0
+            # Use cv2 to load and process the image
+            img = cv2.imread(filepath)
+            img = cv2.resize(img, (224, 224))  # Adjust size to match your model input
+            img_array = np.array(img) / 255.0
+            img_array = np.expand_dims(img_array, axis=0)
 
             prediction = model.predict(img_array)
             predicted_class = np.argmax(prediction, axis=1)[0]
