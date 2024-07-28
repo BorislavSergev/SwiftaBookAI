@@ -1,0 +1,6 @@
+Flask
+Flask-SocketIO
+numpy
+tensorflow
+psutil
+Pillow

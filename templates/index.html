@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Content Header (Page header) -->
+<script src="{{ url_for('static', filename='js/machine-stats.js') }}" defer></script>
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">SwiftaBook AI Dashboard</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="#">Home</a></li>
+                    <li class="breadcrumb-item active">Dashboard</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content -->
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- CPU Usage -->
+            <div class="col-md-3">
+                <div class="card text-white bg-info mb-3">
+                    <div class="card-header"><i class="fas fa-microchip"></i> CPU Usage</div>
+                    <div class="card-body">
+                        <div class="card-title" id="cpu-usage">Loading...</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Memory Usage -->
+            <div class="col-md-3">
+                <div class="card text-white bg-success mb-3">
+                    <div class="card-header"><i class="fas fa-memory"></i> Memory Usage</div>
+                    <div class="card-body">
+                        <div class="card-title" id="memory-info">Loading...</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Uptime -->
+            <div class="col-md-3">
+                <div class="card text-white bg-warning mb-3">
+                    <div class="card-header"><i class="fas fa-clock"></i> Uptime</div>
+                    <div class="card-body">
+                        <div class="card-title" id="uptime">Loading...</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Cores -->
+            <div class="col-md-3">
+                <div class="card text-white bg-primary mb-3">
+                    <div class="card-header"><i class="fas fa-microchip"></i> Cores</div>
+                    <div class="card-body">
+                        <div id="cores">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
