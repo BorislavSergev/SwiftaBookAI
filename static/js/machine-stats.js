@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log("JavaScript file loaded");
 
     function fetchMachineStats() {
-        fetch('http://127.0.0.1:5050/machine-stats')
+        fetch('/machine-stats')
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
