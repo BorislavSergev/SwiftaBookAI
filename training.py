@@ -8,6 +8,7 @@ import platform
 import logging
 from flask import jsonify
 import time
+import cv2
 
 logging.basicConfig(level=logging.INFO)
 UPLOAD_FOLDER = 'uploads/'
@@ -23,6 +24,21 @@ def extract_zip(filepath):
         zip_ref.extractall(extract_dir)
     return extract_dir
 
+# Function to check if the dataset directory contains valid images
+def validate_images(directory):
+    for root, _, files in os.walk(directory):
+        for file in files:
+            if file.lower().endswith(('png', 'jpg', 'jpeg')):
+                image_path = os.path.join(root, file)
+                try:
+                    img = cv2.imread(image_path)
+                    if img is None or img.size == 0:
+                        logging.error(f"Invalid image found: {image_path}")
+                        os.remove(image_path)  # Remove invalid images
+                except Exception as e:
+                    logging.error(f"Error loading image {image_path}: {e}")
+                    os.remove(image_path)  # Remove problematic images
+
 # Function to start training
 def start_training(filepath, socketio):
     global is_training
@@ -33,6 +49,9 @@ def start_training(filepath, socketio):
         # Extract the uploaded zip file
         dataset_path = extract_zip(filepath)
         logging.info(f"Dataset extracted to {dataset_path}")
+
+        # Validate images in the dataset
+        validate_images(dataset_path)
 
         # Prepare data generators
         train_datagen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
