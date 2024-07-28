@@ -1,6 +1,10 @@
 Flask
 Flask-SocketIO
-numpy
+Flask-Cors
+eventlet
+gevent
+gevent-websocket
 tensorflow
-psutil
+numpy
 Pillow
+opencv-python
