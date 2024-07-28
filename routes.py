@@ -1,8 +1,9 @@
 from flask import render_template, request, jsonify
-from training import start_training, get_training_status, clear_logs, evaluate_model, get_logs, get_machine_stats
+from training import start_training, get_training_status, clear_logs, evaluate_model, get_logs, get_machine_stats, predict_image
 import os
 
-UPLOAD_FOLDER = 'uploads'
+# Define upload folder
+UPLOAD_FOLDER = 'uploads/'
 
 def setup_routes(app, socketio):
     @app.route('/')
@@ -20,6 +21,7 @@ def setup_routes(app, socketio):
 
         filepath = os.path.join(UPLOAD_FOLDER, file.filename)
         try:
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
             file.save(filepath)
         except Exception as e:
             return str(e), 500
@@ -54,3 +56,19 @@ def setup_routes(app, socketio):
     @app.route('/evaluate', methods=['POST'])
     def evaluate():
         return evaluate_model()
+
+    @app.route('/predict', methods=['GET'])
+    def predict_page():
+        return render_template('predict.html')
+
+    @app.route('/predict', methods=['POST'])
+    def predict():
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file part'}), 400
+
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No selected file'}), 400
+
+        response = predict_image(file)
+        return jsonify(response)

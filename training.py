@@ -190,3 +190,19 @@ def create_model():
     )
 
     return model
+
+def predict_image(file):
+    if not os.path.exists(MODEL_FILE):
+        return {'error': 'Train model to use it'}
+
+    model = tf.keras.models.load_model(MODEL_FILE)
+    img = cv2.imdecode(np.fromstring(file.read(), np.uint8), cv2.IMREAD_COLOR)
+    img = cv2.resize(img, (150, 150))
+    img = np.expand_dims(img, axis=0) / 255.0
+
+    predictions = model.predict(img)
+    predicted_class = np.argmax(predictions[0])
+    class_names = ['heart', 'oblong', 'oval', 'round', 'square']
+    predicted_label = class_names[predicted_class]
+
+    return {'prediction': predicted_label}

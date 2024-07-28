@@ -1,46 +1,30 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="content-header">
-    <div class="container-fluid">
-        <div class="row mb-2">
-            <div class="col-sm-6">
-                <h1 class="m-0">Predict Face Shape</h1>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="content">
-    <div class="container-fluid">
-        <form id="upload-form" action="{{ url_for('predict') }}" method="POST" enctype="multipart/form-data">
-            <div class="form-group">
-                <label for="image">Upload Image</label>
-                <input type="file" name="image" class="form-control" id="image" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Predict</button>
-        </form>
-        <div id="result"></div>
-    </div>
-</div>
+<h1>Predict Face Shape</h1>
+
+{% if model_exists %}
+<form id="upload-form" enctype="multipart/form-data">
+    <input type="file" name="file" id="file-input">
+    <button type="submit">Upload</button>
+</form>
+<div id="result"></div>
+
 <script>
-    document.getElementById('upload-form').addEventListener('submit', function(event) {
-        event.preventDefault();
-        var formData = new FormData(this);
-        fetch("{{ url_for('predict') }}", {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                document.getElementById('result').innerText = 'Error: ' + data.error;
-            } else {
-                document.getElementById('result').innerText = 'Predicted Face Shape: ' + data.prediction;
-            }
-        })
-        .catch(error => {
-            document.getElementById('result').innerText = 'Error: ' + error.message;
-        });
+document.getElementById('upload-form').onsubmit = async function(event) {
+    event.preventDefault();
+    const formData = new FormData();
+    formData.append('file', document.getElementById('file-input').files[0]);
+
+    const response = await fetch('/predict', {
+        method: 'POST',
+        body: formData
     });
+    const result = await response.json();
+    document.getElementById('result').textContent = JSON.stringify(result);
+}
 </script>
+{% else %}
+<p>Model is not available. Please train the model first.</p>
+{% endif %}
 {% endblock %}
