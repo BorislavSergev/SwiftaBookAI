@@ -159,7 +159,7 @@ def get_machine_stats():
 
 # Dummy implementation for model evaluation
 def evaluate_model():
-    return "Model evaluation not implemented", 200
+    return "need to do it.", 200
 
 # Dummy implementation for image prediction
 def predict_image(file):
