@@ -1,6 +1,7 @@
 from flask import render_template, request, jsonify
-from training import start_training, get_training_status, clear_logs, get_logs, get_machine_stats, predict_image
-from evaluate import evaluate_model
+from werkzeug.utils import secure_filename
+from training import start_training, get_training_status, clear_logs, get_logs, get_machine_stats
+from evaluate import evaluate_model, predict_image
 import os
 
 UPLOAD_FOLDER = 'uploads/'
@@ -24,7 +25,7 @@ def setup_routes(app, socketio):
         if file.filename == '':
             return jsonify({'error': 'No selected file'}), 400
 
-        filepath = os.path.join(UPLOAD_FOLDER, file.filename)
+        filepath = os.path.join(UPLOAD_FOLDER, secure_filename(file.filename))
         try:
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
             file.save(filepath)
@@ -75,5 +76,12 @@ def setup_routes(app, socketio):
         if file.filename == '':
             return jsonify({'error': 'No selected file'}), 400
 
-        response, status_code = predict_image(file)
+        filepath = os.path.join(UPLOAD_FOLDER, secure_filename(file.filename))
+        try:
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            file.save(filepath)
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+        response, status_code = predict_image(filepath)
         return jsonify(response), status_code

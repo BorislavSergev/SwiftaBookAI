@@ -1,15 +1,14 @@
 import os
 import zipfile
-from flask import jsonify
 import tensorflow as tf
 from keras._tf_keras.keras.preprocessing.image import ImageDataGenerator
 from keras._tf_keras.keras import layers, models
-import psutil
-import platform
 import logging
 import datetime
 from PIL import Image
+from flask_socketio import SocketIO
 
+# Setup logging
 logging.basicConfig(level=logging.INFO)
 UPLOAD_FOLDER = 'uploads/'
 
@@ -52,12 +51,76 @@ def validate_images(dataset_path):
                 os.remove(img_path)
     append_log("Image validation completed.")
 
+# Define custom metrics
+
+def precision_m(y_true, y_pred):
+    y_true = tf.cast(y_true, tf.float32)
+    y_pred = tf.cast(y_pred, tf.float32)
+    
+    true_positives = tf.reduce_sum(tf.cast(tf.logical_and(tf.equal(tf.argmax(y_true, axis=-1), tf.argmax(y_pred, axis=-1)), tf.equal(tf.argmax(y_true, axis=-1), tf.argmax(y_pred, axis=-1))), tf.float32))
+    predicted_positives = tf.reduce_sum(tf.cast(tf.argmax(y_pred, axis=-1), tf.float32))
+    
+    precision = true_positives / (predicted_positives + tf.keras.backend.epsilon())
+    
+    tf.print("Precision - True Positives:", true_positives)
+    tf.print("Precision - Predicted Positives:", predicted_positives)
+    
+    return precision
+
+def recall_m(y_true, y_pred):
+    y_true = tf.cast(y_true, tf.float32)
+    y_pred = tf.cast(y_pred, tf.float32)
+    
+    true_positives = tf.reduce_sum(tf.cast(tf.logical_and(tf.equal(tf.argmax(y_true, axis=-1), tf.argmax(y_pred, axis=-1)), tf.equal(tf.argmax(y_true, axis=-1), tf.argmax(y_pred, axis=-1))), tf.float32))
+    possible_positives = tf.reduce_sum(tf.cast(tf.argmax(y_true, axis=-1), tf.float32))
+    
+    recall = true_positives / (possible_positives + tf.keras.backend.epsilon())
+    
+    tf.print("Recall - True Positives:", true_positives)
+    tf.print("Recall - Possible Positives:", possible_positives)
+    
+    return recall
+
+def f1_score_m(y_true, y_pred):
+    precision = precision_m(y_true, y_pred)
+    recall = recall_m(y_true, y_pred)
+    
+    f1_score = 2 * ((precision * recall) / (precision + recall + tf.keras.backend.epsilon()))
+    
+    tf.print("F1 Score - Precision:", precision)
+    tf.print("F1 Score - Recall:", recall)
+    
+    return f1_score
+
+
+# Define a custom callback to send logs to the client
+class TrainingCallback(tf.keras.callbacks.Callback):
+    def __init__(self, socketio):
+        super().__init__()
+        self.socketio = socketio
+
+    def on_epoch_end(self, epoch, logs=None):
+        log_entry = {
+            'epoch': epoch + 1,
+            'loss': logs.get('loss'),
+            'accuracy': logs.get('accuracy'),
+            'val_loss': logs.get('val_loss'),
+            'val_accuracy': logs.get('val_accuracy'),
+            'precision_m': logs.get('precision_m'),
+            'recall_m': logs.get('recall_m'),
+            'f1_score_m': logs.get('f1_score_m')
+        }
+        # Emit the log entry to the client
+        self.socketio.emit('log', log_entry)
+        # Optionally print logs to console for debugging
+        print(f"Epoch {epoch + 1}: {log_entry}")
+
 # Function to start training
 def start_training(filepath, socketio):
     global is_training
     is_training = True
     training_logs.clear()
-    
+
     try:
         # Extract the uploaded zip file
         dataset_path = extract_zip(filepath)
@@ -69,20 +132,26 @@ def start_training(filepath, socketio):
 
         # Prepare data generators
         append_log("Preparing data generators.")
-        train_datagen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
+        train_datagen = ImageDataGenerator(
+            rescale=1./255,
+            validation_split=0.2  # Split the data for validation
+        )
+
+        # Load training and validation data
         train_generator = train_datagen.flow_from_directory(
             dataset_path,
             target_size=(150, 150),
             batch_size=32,
             class_mode='categorical',
-            subset='training'
+            subset='training'  # Set as training data
         )
+
         validation_generator = train_datagen.flow_from_directory(
             dataset_path,
             target_size=(150, 150),
             batch_size=32,
             class_mode='categorical',
-            subset='validation'
+            subset='validation'  # Set as validation data
         )
 
         # Build the model
@@ -101,20 +170,20 @@ def start_training(filepath, socketio):
             layers.Dense(train_generator.num_classes, activation='softmax')
         ])
 
-        model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+        model.compile(
+            optimizer='adam',
+            loss='categorical_crossentropy',
+            metrics=[
+                 'accuracy',
+                precision_m,  # Custom precision
+                recall_m,     # Custom recall
+                f1_score_m,   # Custom F1 score
+                tf.keras.metrics.AUC(),  # Built-in AUC metric
+            ]
+        )
 
         # Define a custom callback to send logs to the client
-        class TrainingCallback(tf.keras.callbacks.Callback):
-            def on_epoch_end(self, epoch, logs=None):
-                log_entry = f"Epoch {epoch + 1}: Loss={logs.get('loss')}, Accuracy={logs.get('accuracy')}, Val Loss={logs.get('val_loss')}, Val Accuracy={logs.get('val_accuracy')}"
-                append_log(log_entry)
-                socketio.emit('log', {
-                    'epoch': epoch,
-                    'loss': logs.get('loss'),
-                    'accuracy': logs.get('accuracy'),
-                    'val_loss': logs.get('val_loss'),
-                    'val_accuracy': logs.get('val_accuracy')
-                })
+        training_callback = TrainingCallback(socketio)
 
         append_log("Starting model training.")
         # Train the model
@@ -122,8 +191,11 @@ def start_training(filepath, socketio):
             train_generator,
             epochs=10,
             validation_data=validation_generator,
-            callbacks=[TrainingCallback()]
+            callbacks=[training_callback]
         )
+
+        # Save the model
+        model.save('saved_model/model.h5')
 
         append_log("Training completed successfully.")
         is_training = False
@@ -150,6 +222,10 @@ def clear_logs():
 
 # Function to get machine stats
 def get_machine_stats():
+    import platform
+    import psutil
+    import datetime
+
     cpu_info = platform.processor()
     system_info = platform.system()
     release_info = platform.release()
