@@ -8,25 +8,49 @@ import platform
 import logging
 import datetime
 from PIL import Image
+from flask import jsonify
 
+# Define log file path
+LOG_FILE_PATH = 'logs/training_logs.txt'
+
+# Ensure log directory exists
+os.makedirs(os.path.dirname(LOG_FILE_PATH), exist_ok=True)
+
+# Initialize logger
 logging.basicConfig(level=logging.INFO)
-UPLOAD_FOLDER = 'uploads/'
-MODEL_SAVE_PATH = 'saved_models/'
 
 # Placeholder variables for training status and logs
 is_training = False
 training_logs = []
 
+# Function to append messages to logs
+def log_message(message, level='INFO'):
+    # Append message to in-memory log list
+    training_logs.append(f"{datetime.datetime.now()} - {level} - {message}")
+    
+    # Append message to log file
+    with open(LOG_FILE_PATH, 'a') as log_file:
+        log_file.write(f"{datetime.datetime.now()} - {level} - {message}\n")
+    
+    # Print the message with color
+    if level == 'INFO':
+        print(f"\033[92m{message}\033[0m")  # Green for INFO
+    elif level == 'ERROR':
+        print(f"\033[91m{message}\033[0m")  # Red for ERROR
+
 # Function to extract zip file
 def extract_zip(filepath):
-    extract_dir = os.path.join(UPLOAD_FOLDER, os.path.splitext(os.path.basename(filepath))[0])
+    extract_dir = os.path.join('uploads', os.path.splitext(os.path.basename(filepath))[0])
     os.makedirs(extract_dir, exist_ok=True)  # Ensure directory exists
     with zipfile.ZipFile(filepath, 'r') as zip_ref:
+        log_message("Starting zip extraction", 'INFO')
         zip_ref.extractall(extract_dir)
+        log_message(f"Zip extraction completed, folder={extract_dir}", 'INFO')
     return extract_dir
 
 # Function to validate images
 def validate_images(dataset_path):
+    log_message("Starting image validation", 'INFO')
     for root, _, files in os.walk(dataset_path):
         for file in files:
             try:
@@ -36,10 +60,10 @@ def validate_images(dataset_path):
                     img.verify()  # Will raise an exception if the image is corrupt
                     img = Image.open(img_path)
                     img = img.resize((150, 150))
-                
             except (IOError, SyntaxError) as e:
-                logging.error(f"Invalid or corrupt image found and removed: {img_path}, Error: {e}")
+                log_message(f"Invalid or corrupt image found and removed: {img_path}, Error: {e}", 'ERROR')
                 os.remove(img_path)
+    log_message("Image validation completed", 'INFO')
 
 # Function to start training
 def start_training(filepath, socketio):
@@ -48,19 +72,14 @@ def start_training(filepath, socketio):
     training_logs.clear()
     
     try:
-        logging.info("Starting training process")
-
         # Extract the uploaded zip file
         dataset_path = extract_zip(filepath)
-        logging.info(f"Dataset extracted to {dataset_path}")
 
         # Validate images
-        logging.info("Starting image validation")
         validate_images(dataset_path)
-        logging.info("Image validation completed")
 
         # Prepare data generators
-        logging.info("Preparing data generators")
+        log_message("Preparing data generators", 'INFO')
         train_datagen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
         train_generator = train_datagen.flow_from_directory(
             dataset_path,
@@ -77,9 +96,8 @@ def start_training(filepath, socketio):
             subset='validation'
         )
 
-        logging.info("Data generators prepared")
-
         # Build the model
+        log_message("Building the model", 'INFO')
         model = models.Sequential([
             layers.Conv2D(32, (3, 3), activation='relu', input_shape=(150, 150, 3)),
             layers.MaxPooling2D((2, 2)),
@@ -99,18 +117,13 @@ def start_training(filepath, socketio):
         # Define a custom callback to send logs to the client
         class TrainingCallback(tf.keras.callbacks.Callback):
             def on_epoch_end(self, epoch, logs=None):
-                log_entry = f"Epoch {epoch + 1}: Loss={logs.get('loss')}, Accuracy={logs.get('accuracy')}, Val Loss={logs.get('val_loss')}, Val Accuracy={logs.get('val_accuracy')}"
-                training_logs.append(log_entry)
-                socketio.emit('log', {
-                    'epoch': epoch,
-                    'loss': logs.get('loss'),
-                    'accuracy': logs.get('accuracy'),
-                    'val_loss': logs.get('val_loss'),
-                    'val_accuracy': logs.get('val_accuracy')
-                })
+                log_entry = (f"Epoch {epoch + 1}: Loss={logs.get('loss')}, Accuracy={logs.get('accuracy')}, "
+                             f"Val Loss={logs.get('val_loss')}, Val Accuracy={logs.get('val_accuracy')}")
+                log_message(log_entry, 'INFO')
+                socketio.emit('log', {'message': log_entry})
 
         # Train the model
-        logging.info("Starting model training")
+        log_message("Starting training", 'INFO')
         model.fit(
             train_generator,
             epochs=10,
@@ -118,18 +131,12 @@ def start_training(filepath, socketio):
             callbacks=[TrainingCallback()]
         )
 
-        # Save the trained model
-        os.makedirs(MODEL_SAVE_PATH, exist_ok=True)  # Ensure directory exists
-        model_save_path = os.path.join(MODEL_SAVE_PATH, 'trained_model.h5')
-        model.save(model_save_path)
-        logging.info(f"Model saved to {model_save_path}")
-
-        logging.info("Training completed")
+        log_message("Training completed", 'INFO')
         is_training = False
         return 'Training completed', 200
 
     except Exception as e:
-        logging.error(f"Error during training: {e}")
+        log_message(f"Error during training: {e}", 'ERROR')
         is_training = False
         return f"Error during training: {e}", 500
 
@@ -139,11 +146,19 @@ def get_training_status():
 
 # Function to get logs
 def get_logs():
-    return {'logs': training_logs}, 200
+    with open(LOG_FILE_PATH, 'r') as log_file:
+        logs = log_file.readlines()
+    return {'logs': logs}, 200
 
 # Function to clear logs
 def clear_logs():
+    # Clear in-memory logs
     training_logs.clear()
+    
+    # Clear log file
+    with open(LOG_FILE_PATH, 'w') as log_file:
+        log_file.write('')
+    
     return 'Logs cleared', 200
 
 # Function to get machine stats

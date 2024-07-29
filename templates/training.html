@@ -69,7 +69,7 @@
                 processData: false,
                 contentType: false,
                 success: function(response) {
-                    appendLog(response[0]);
+                    appendLog('Training started successfully.');
                 },
                 error: function(response) {
                     appendLog('Error starting training: ' + response.responseText);
@@ -87,7 +87,8 @@
 
         var socket = io.connect('http://' + document.domain + ':' + location.port);
         socket.on('log', function(data) {
-            appendLog('Epoch ' + (data.epoch + 1) + ': Loss=' + data.loss + ', Accuracy=' + data.accuracy + ', Val Loss=' + data.val_loss + ', Val Accuracy=' + data.val_accuracy);
+            var logMessage = `Epoch ${data.epoch + 1}: Loss=${data.loss}, Accuracy=${data.accuracy}, Val Loss=${data.val_loss}, Val Accuracy=${data.val_accuracy}`;
+            appendLog(logMessage);
         });
 
         function appendLog(message) {
@@ -97,11 +98,12 @@
 
         function fetchLogs() {
             $.get('/logs', function(data) {
-                if (data.error) {
-                    $('#console-log').html('<p>' + data.error + '</p>');
-                } else {
-                    $('#console-log').html(data.replace(/\n/g, '<br>'));
+                if (data.logs) {
+                    var formattedLogs = data.logs.join('<br>');
+                    $('#console-log').html(formattedLogs);
                     $('#console-log').scrollTop($('#console-log')[0].scrollHeight);
+                } else {
+                    $('#console-log').html('<p>No logs available.</p>');
                 }
             });
         }
