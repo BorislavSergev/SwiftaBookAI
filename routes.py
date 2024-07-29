@@ -1,8 +1,5 @@
 from flask import render_template, request, jsonify
-from training import (
-    start_training, get_training_status, clear_logs,
-    get_logs, get_machine_stats, predict_image
-)
+from training import start_training, get_training_status, clear_logs, get_logs, get_machine_stats, predict_image
 from evaluate import evaluate_model
 import os
 
@@ -21,18 +18,18 @@ def setup_routes(app, socketio):
     @app.route('/train', methods=['POST'])
     def train():
         if 'file' not in request.files:
-            return 'No file part', 400
+            return jsonify({'error': 'No file part'}), 400
 
         file = request.files['file']
         if file.filename == '':
-            return 'No selected file', 400
+            return jsonify({'error': 'No selected file'}), 400
 
         filepath = os.path.join(UPLOAD_FOLDER, file.filename)
         try:
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
             file.save(filepath)
         except Exception as e:
-            return str(e), 500
+            return jsonify({'error': str(e)}), 500
 
         response, status_code = start_training(filepath, socketio)
         return jsonify({'message': response}), status_code
@@ -63,7 +60,7 @@ def setup_routes(app, socketio):
     @app.route('/evaluate', methods=['POST'])
     def evaluate():
         response, status_code = evaluate_model()
-        return jsonify({'message': response}), status_code
+        return jsonify(response), status_code
 
     @app.route('/predict', methods=['GET'])
     def predict_page():
