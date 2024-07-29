@@ -1,8 +1,9 @@
 from flask import render_template, request, jsonify
 from training import (
-    start_training, get_training_status, clear_logs, evaluate_model,
+    start_training, get_training_status, clear_logs,
     get_logs, get_machine_stats, predict_image
 )
+from evaluate import evaluate_model
 import os
 
 UPLOAD_FOLDER = 'uploads/'
