@@ -173,8 +173,39 @@ def get_machine_stats():
     return stats, 200
 
 # Dummy implementation for model evaluation
+@app.route('/evaluate-model', methods=['GET'])
 def evaluate_model():
-    return "Model evaluation not implemented", 200
+    global model_path
+    
+    # Ensure the model file exists
+    if not os.path.exists(model_path):
+        return "Model not found. Please train a model first.", 404
+    
+    try:
+        # Load the trained model
+        model = tf.keras.models.load_model(model_path)
+        
+        # Prepare the test data
+        test_datagen = ImageDataGenerator(rescale=1./255)
+        test_generator = test_datagen.flow_from_directory(
+            'test_data/',  # Directory containing test data
+            target_size=(150, 150),
+            batch_size=32,
+            class_mode='categorical',
+            shuffle=False
+        )
+        
+        # Evaluate the model
+        loss, accuracy = model.evaluate(test_generator, verbose=1)
+        
+        # Return evaluation metrics
+        return jsonify({
+            'loss': loss,
+            'accuracy': accuracy
+        })
+        
+    except Exception as e:
+        return f"Error evaluating model: {e}", 500
 
 # Dummy implementation for image prediction
 def predict_image(file):

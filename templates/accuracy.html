@@ -38,10 +38,10 @@
                     $('#accuracy-result').html(`<p>${data.error}</p>`);
                 } else {
                     $('#accuracy-result').html(`
-                        <p>Validation Accuracy: ${data.accuracy}</p>
-                        <p>Precision: ${data.precision}</p>
-                        <p>Recall: ${data.recall}</p>
-                        <p>F1 Score: ${data.f1_score}</p>
+                        <p>Validation Accuracy: ${data.accuracy.toFixed(4)}</p>
+                        <p>Precision: ${data.precision.toFixed(4)}</p>
+                        <p>Recall: ${data.recall.toFixed(4)}</p>
+                        <p>F1 Score: ${data.f1_score.toFixed(4)}</p>
                     `);
                 }
             }).fail(function() {
