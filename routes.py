@@ -44,7 +44,7 @@ def setup_routes(app, socketio):
     @app.route('/logs', methods=['GET'])
     def logs():
         logs, status_code = get_logs()
-        return jsonify({'logs': logs}), status_code
+        return jsonify(logs), status_code
 
     @app.route('/clear-logs', methods=['POST'])
     def clear_logs_route():

@@ -8,7 +8,6 @@ import platform
 import logging
 import datetime
 from PIL import Image
-from flask import jsonify
 
 logging.basicConfig(level=logging.INFO)
 UPLOAD_FOLDER = 'uploads/'
@@ -117,15 +116,15 @@ def start_training(filepath, socketio):
     except Exception as e:
         logging.error(f"Error during training: {e}")
         is_training = False
-        return f"Error training: {e}", 500
+        return f"Error during training: {e}", 500
 
 # Function to get training status
 def get_training_status():
-    return jsonify({"is_training": is_training}), 200
+    return {'is_training': is_training}, 200
 
 # Function to get logs
 def get_logs():
-    return jsonify({'logs': training_logs}), 200
+    return {'logs': training_logs}, 200
 
 # Function to clear logs
 def clear_logs():
@@ -155,7 +154,7 @@ def get_machine_stats():
         "RAM": ram_info,
         "GPU": "NVIDIA"  # Placeholder, replace with actual GPU info if available
     }
-    return jsonify(stats), 200
+    return stats, 200
 
 # Dummy implementation for model evaluation
 def evaluate_model():
