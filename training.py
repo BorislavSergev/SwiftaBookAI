@@ -11,6 +11,7 @@ from PIL import Image
 
 logging.basicConfig(level=logging.INFO)
 UPLOAD_FOLDER = 'uploads/'
+MODEL_SAVE_PATH = 'saved_models/'
 
 # Placeholder variables for training status and logs
 is_training = False
@@ -47,19 +48,19 @@ def start_training(filepath, socketio):
     training_logs.clear()
     
     try:
+        logging.info("Starting training process")
+
         # Extract the uploaded zip file
         dataset_path = extract_zip(filepath)
         logging.info(f"Dataset extracted to {dataset_path}")
 
         # Validate images
-        logging.info("Starting validating the images")
+        logging.info("Starting image validation")
         validate_images(dataset_path)
-        logging.info("Validation is successful")
-
+        logging.info("Image validation completed")
 
         # Prepare data generators
-
-        logging.info("Preparing data")
+        logging.info("Preparing data generators")
         train_datagen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
         train_generator = train_datagen.flow_from_directory(
             dataset_path,
@@ -75,6 +76,8 @@ def start_training(filepath, socketio):
             class_mode='categorical',
             subset='validation'
         )
+
+        logging.info("Data generators prepared")
 
         # Build the model
         model = models.Sequential([
@@ -107,12 +110,19 @@ def start_training(filepath, socketio):
                 })
 
         # Train the model
+        logging.info("Starting model training")
         model.fit(
             train_generator,
             epochs=10,
             validation_data=validation_generator,
             callbacks=[TrainingCallback()]
         )
+
+        # Save the trained model
+        os.makedirs(MODEL_SAVE_PATH, exist_ok=True)  # Ensure directory exists
+        model_save_path = os.path.join(MODEL_SAVE_PATH, 'trained_model.h5')
+        model.save(model_save_path)
+        logging.info(f"Model saved to {model_save_path}")
 
         logging.info("Training completed")
         is_training = False
