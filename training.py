@@ -117,7 +117,7 @@ def start_training(filepath, socketio):
     except Exception as e:
         logging.error(f"Error during training: {e}")
         is_training = False
-        return f"Error during training: {e}", 500
+        return f"Error training: {e}", 500
 
 # Function to get training status
 def get_training_status():
