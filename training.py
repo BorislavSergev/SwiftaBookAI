@@ -6,8 +6,9 @@ from keras._tf_keras.keras import layers, models
 import psutil
 import platform
 import logging
-import datetime
+import cv2
 from PIL import Image
+import datetime
 from flask import jsonify
 
 logging.basicConfig(level=logging.INFO)
@@ -20,9 +21,9 @@ training_logs = []
 # Function to extract zip file
 def extract_zip(filepath):
     extract_dir = os.path.join(UPLOAD_FOLDER, os.path.splitext(os.path.basename(filepath))[0])
-    os.makedirs(extract_dir, exist_ok=True)  # Ensure directory exists
     with zipfile.ZipFile(filepath, 'r') as zip_ref:
         zip_ref.extractall(extract_dir)
+
     return extract_dir
 
 # Function to validate images
@@ -112,7 +113,7 @@ def start_training(filepath, socketio):
 
         logging.info("Training completed")
         is_training = False
-        return 'Training completed', 200
+        return 'Training started', 200
 
     except Exception as e:
         logging.error(f"Error during training: {e}")
@@ -121,11 +122,11 @@ def start_training(filepath, socketio):
 
 # Function to get training status
 def get_training_status():
-    return jsonify({"is_training": is_training}), 200
+    return {"is_training": is_training}, 200
 
 # Function to get logs
 def get_logs():
-    return jsonify({'logs': training_logs}), 200
+    return '\n'.join(training_logs), 200
 
 # Function to clear logs
 def clear_logs():
@@ -155,11 +156,11 @@ def get_machine_stats():
         "RAM": ram_info,
         "GPU": "NVIDIA"  # Placeholder, replace with actual GPU info if available
     }
-    return jsonify(stats), 200
+    return stats, 200
 
 # Dummy implementation for model evaluation
 def evaluate_model():
-    return "Model evaluation not implemented", 200
+    return "need to do it.", 200
 
 # Dummy implementation for image prediction
 def predict_image(file):
