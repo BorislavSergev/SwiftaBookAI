@@ -52,12 +52,14 @@ def start_training(filepath, socketio):
         logging.info(f"Dataset extracted to {dataset_path}")
 
         # Validate images
-        logging.info(f"Starting validating the images")
+        logging.info("Starting validating the images")
         validate_images(dataset_path)
-        logging.info(f"Validation is successful")
+        logging.info("Validation is successful")
 
 
         # Prepare data generators
+
+        logging.info("Preparing data")
         train_datagen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
         train_generator = train_datagen.flow_from_directory(
             dataset_path,
