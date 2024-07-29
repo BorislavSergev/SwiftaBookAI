@@ -59,15 +59,30 @@ def start_training(filepath, socketio):
     
     try:
         # Extract the uploaded zip file
+        socketio.emit('log', {
+            "Starting extraction"
+        })
         dataset_path = extract_zip(filepath)
         append_log("Dataset extraction successful.")
+        socketio.emit('log', {
+            "Dataset extraction is successful."
+        })
 
         # Validate images
+        socketio.emit('log', {
+            "Starting image validation."
+        })
         validate_images(dataset_path)
         append_log("Image validation successful.")
+        socketio.emit('log', {
+            "Image validation is successful."
+        })
 
         # Prepare data generators
         append_log("Preparing data generators.")
+        socketio.emit('log', {
+            "Preparing data generators"
+        })
         train_datagen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
         train_generator = train_datagen.flow_from_directory(
             dataset_path,
@@ -86,6 +101,11 @@ def start_training(filepath, socketio):
 
         # Build the model
         append_log("Building the model.")
+        socketio.emit('log', {
+            "Building the model."
+        })
+
+
         model = models.Sequential([
             layers.Conv2D(32, (3, 3), activation='relu', input_shape=(150, 150, 3)),
             layers.MaxPooling2D((2, 2)),
@@ -116,6 +136,9 @@ def start_training(filepath, socketio):
                 })
 
         append_log("Starting model training.")
+        socketio.emit('log', {
+            "Starting model training."
+        })
         # Train the model
         model.fit(
             train_generator,
@@ -125,6 +148,9 @@ def start_training(filepath, socketio):
         )
 
         append_log("Training completed successfully.")
+        socketio.emit('log', {
+            "Training completed successfully"
+        })
         is_training = False
         return 'Training completed', 200
 
