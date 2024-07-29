@@ -7,6 +7,7 @@ import psutil
 import platform
 import logging
 import cv2
+from PIL import Image
 import datetime
 from flask import jsonify
 
@@ -30,12 +31,14 @@ def validate_images(dataset_path):
         for file in files:
             try:
                 img_path = os.path.join(root, file)
-                img = cv2.imread(img_path)
-                if img is None or img.size == 0:
-                    logging.warning(f"Invalid image found and removed: {img_path}")
-                    os.remove(img_path)
-            except Exception as e:
-                logging.error(f"Error validating image {img_path}: {e}")
+                # Use PIL to open the image
+                with Image.open(img_path) as img:
+                    img.verify()  # Will raise an exception if the image is corrupt
+                    img = Image.open(img_path)
+                    img = img.resize((150, 150))
+                
+            except (IOError, SyntaxError) as e:
+                logging.error(f"Invalid or corrupt image found and removed: {img_path}, Error: {e}")
                 os.remove(img_path)
 
 # Function to start training
